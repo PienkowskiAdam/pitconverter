@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import fitz  # PyMuPDF library for PDF processing
 import function_crop_image as ci
 import function_get_text as gt
 import function_excel as fe
@@ -19,162 +19,54 @@ print('pdfFolder = ', pdfFolder)
 pdfFiles = os.listdir(pdfFolder)
 print('pdfFiles = ', pdfFiles)
 
-# GET CONVERT PDF TO TEXT FOLDER
-convertPdf2TextFolder = currDir + "\\convert_pdf_2_text"
-print('convertPdf2TextFolder = ', convertPdf2TextFolder)
-if not os.path.exists(convertPdf2TextFolder):
-    os.makedirs(convertPdf2TextFolder)
+# GET CONVERT PDF TO IMAGE FOLDER
+# TO CONVERT PDF FILE TO EXCEL FILE, WE NEED TO CONVERT PDF FILE TO IMAGE FILE
+convertPdf2ImageFolder = currDir + "\\convert_pdf_2_image"
+print('convertPdf2ImageFolder = ', convertPdf2ImageFolder)
+if not os.path.exists(convertPdf2ImageFolder):
+    os.makedirs(convertPdf2ImageFolder)
 
-# CONVERT ALL PDF FILES TO TEXT FILES AND SAVE IT TO CONVERT PDF 2 TEXT FOLDER
+# CONVERT ALL PDF FILES TO IMAGE FILE AND SAVE IT TO CONVERT PDF 2 IMAGE FOLDER
 for pdfFile in pdfFiles:
     # GET PDF FILE NAME
     print('pdfFile = ', pdfFile)
     # SET PDF PATH FILE NAME
     pdfFilePath = pdfFolder + "\\" + pdfFile
     print('pdfFilePath = ', pdfFilePath)
-    # SET - CONVERTED TEXT FILE
-    pdfTextConvertedFile = pdfFile.replace("pdf", "txt")
-    print('pdfTextConvertedFile = ', pdfTextConvertedFile)
-    # SET - PATH CONVERTED TEXT FILE
-    pdfTextConvertedFilePath = convertPdf2TextFolder + "\\" + pdfTextConvertedFile
-    print('pdfTextConvertedFilePath = ', pdfTextConvertedFilePath)
+    # SET - CONVERTED IMAGE FILE
+    pdfImageConvertedFile = pdfFile.replace("pdf", "jpg")
+    print('pdfImageConvertedFile = ', pdfImageConvertedFile)
+    # SET - PATH CONVERTED IMAGE FILE
+    pdfImageConvertedFilePath = convertPdf2ImageFolder + "\\" + pdfImageConvertedFile
+    print('pdfImageConvertedFilePath = ', pdfImageConvertedFilePath)
 
-    # CONVERT PDF FILE TO TEXT FILE
+    # CONVERT PDF FILE TO IMAGE FILE
     try:
-        # Open the PDF file
-        pdf_document = fitz.open(pdfFilePath)
-        # Extract text from all pages
-        text = ""
-        for page_num in range(pdf_document.page_count):
-            page = pdf_document[page_num]
-            text += page.get_text("text")
-        
-        # Save the text to a file
-        with open(pdfTextConvertedFilePath, "w", encoding="utf-8") as text_file:
-            text_file.write(text)
-            
+        doc = fitz.open(pdfFilePath)
+        for page_num in range(doc.page_count):
+            page = doc.load_page(page_num)
+            image_matrix = page.get_matrix()
+            pix = page.get_pixmap(matrix=image_matrix, alpha=False)
+            with open(pdfImageConvertedFilePath, "wb") as img_file:
+                img_file.write(pix.get_image_data())
     except Exception as e:
         print('e = ', e)
 
-# GET LIST OF TEXT FILES GENERATED FROM PDF
-textFiles = os.listdir(convertPdf2TextFolder)
-print('textFiles = ', textFiles)
+# GET LIST CONVERTED IMAGE FILES
+convertedImageFiles = os.listdir(convertPdf2ImageFolder)
+print('convertedImageFiles = ', convertedImageFiles)
 
-# THE NEXT STEP AFTER CONVERT PDF FILE TO TEXT FILE
-# IS TO GET TEXT FROM TEXT FILE TO BE SAVED AS DATA TO THE TABLE IN EXCEL FILE
-# WE GET TEXT BY CROPPED THE TEXT TO SEVERAL TEXT FILES
+# THE NEXT STEP AFTER CONVERT PDF FILE TO IMAGE FILE
+# IS TO GET TEXT FROM IMAGE FILE TO BE SAVED AS DATA TO THE TABLE IN EXCEL FILE
+# WE GET TEXT BY CROPPED THE IMAGES TO SEVERAL IMAGES
 
-# GET CROPPED TEXT FILES FOLDER
-croppedTextFolder = currDir + "\\cropped_text"
-print('croppedTextFolder = ', croppedTextFolder)
-if not os.path.exists(croppedTextFolder):
-    os.makedirs(croppedTextFolder)
+# GET CROPPED IMAGES FOLDER
+croppedImgesFolder = currDir + "\\cropped_images"
+print('croppedImgesFolder = ', croppedImgesFolder)
+if not os.path.exists(croppedImgesFolder):
+    os.makedirs(croppedImgesFolder)
 
-# SET - TEXT TO CAPTURE FROM TEXT FILE
-textToCapture = ["PO DATE", "PO NUMBER", "COMPANY NAME", "COMPANY ADDRESS", "COMPANY CITY", "COMPANY PHONE NUMBER",
-                  "COMPANY WEB SITES", "VENDOR NAME", "VENDOR ADDRESS", "VENDOR CITY", "VENDOR PHONE NUMBER",
-                  "SHIP TO PERSON", "SHIP TO COMPANY NAME", "SHIP TO COMPANY ADDRESS", "SHIP TO COMPANY CITY",
-                  "SHIP TO COMPANY PHONE NUMBER", "DELIVERY DATE", "SUBTOTAL", "TAX", "SHIPPING", "TOTAL"]
-
-# DATA TO SAVED
-savedData = []
-
-# CROP TEXT TO SEVERAL TEXT FILES
-# GET DATA FROM CROPPED TEXT FILES
-for textFile in textFiles:
-    print('textFile = ', textFile)
-
-    textFilePath = convertPdf2TextFolder + "\\" + textFile
-    print('textFilePath = ', textFilePath)
-
-    # SET DATA FROM TEXT
-    data = []
-    dataFile = ("CONVERTED TEXT FILE", textFile)
-    data.append(dataFile)
-
-    # SET FILE NAME CROPPED TEXT - OCR - TEXT
-    for capture in textToCapture:
-        cropp = capture
-        capture = capture.lower()
-        capture = capture.replace(" ", "_")
-        # print('capture = ', capture)
-        croppedTextFile = textFile.replace(".txt", "")
-        croppedTextFile = croppedTextFile + "_" + capture + ".txt"
-        # print('croppedTextFile = ', croppedTextFile)
-        croppedTextFilePath = croppedTextFolder + "\\" + croppedTextFile
-        print('croppedTextFilePath = ', croppedTextFilePath)
-
-        # CROP TEXT
-        resultCroppedText = ci.croppText(textFilePath, croppedTextFilePath, cropp)
-        print('resultCroppedText = ', resultCroppedText)
-        # GET TEXT FROM CROPPED TEXT
-        if resultCroppedText == "SUCCESS":
-            resultGetText = gt.getSimpleTextFromTextFile(croppedTextFilePath)
-            print('resultGetText = ', resultGetText)
-            if resultGetText:
-                if capture == "company_city":
-                    results = resultGetText.split(", ")
-                    dataText = (capture, results[0])
-                    data.append(dataText)
-                    dataText = ("company_zip_code", results[2])
-                    data.append(dataText)
-                elif capture == "vendor_city":
-                    results = resultGetText.split(", ")
-                    dataText = (capture, results[0])
-                    data.append(dataText)
-                    dataText = ("vendor_zip_code", results[2])
-                    data.append(dataText)
-                elif capture == "ship_to_company_city":
-                    results = resultGetText.split(", ")
-                    dataText = (capture, results[0])
-                    data.append(dataText)
-                    dataText = ("ship_to_company_zip_code", results[2])
-                    data.append(dataText)
-                else:
-                    dataText = (capture, resultGetText)
-                    data.append(dataText)
-        else:
-            exit()
-
-    savedData.append(data)
-    # DELETE ALL CONVERTED PDF 2 TEXT FILE
-    os.remove(textFilePath)
-    print('delete File textFilePath = ', textFilePath)
-
-# NEXT STEP IS TO GENERATE EXCEL FILE
-# AND INSERT DATA INTO TABLE
-
-# GET CURRENT DATE TIME
-currDateTime = datetime.now().strftime('%y%m%d_%H%M%S')
-print(currDateTime)
-
-# GENERATED EXCEL FILE
-excelFile = "pdf_to_excel_" + currDateTime + ".xlsx"
-print('excelFile = ', excelFile)
-
-# GET EXCEL FOLDER
-excelFolder = currDir + "\\excel"
-if not os.path.exists(excelFolder):
-    os.makedirs(excelFolder)
-
-# GET EXCEL FILE PATH
-excelFilePath = excelFolder + "\\" + excelFile
-print('excelFilePath = ', excelFilePath)
-
-# CREATE EXCEL FILE
-workbook = xlsxwriter.Workbook(excelFilePath)
-# SET EXCEL SHEET NAME
-sheetName = "Purchase Order Data"
-worksheet = workbook.add_worksheet(sheetName)
-
-# MERGE FORMAT - FOR COLUMN HEADER TABLE
-merge_format = workbook.add_format({
-    'align': 'center',
-    'valign': 'vcenter'
-})
-
-# SET HEADER
--------------------------------
+# ... (rest of the code remains the same)
 
 
 import os

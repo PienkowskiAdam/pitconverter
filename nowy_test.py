@@ -1,6 +1,5 @@
 import os
-from PyPDF2 import PdfFileReader
-from pdf2image import convert_from_path
+import fitz  # PyMuPDF
 
 def find_pdf_file(directory):
     for root, dirs, files in os.walk(directory):
@@ -10,22 +9,26 @@ def find_pdf_file(directory):
     return None
 
 def extract_images_from_pdf(pdf_path, output_folder):
-    with open(pdf_path, 'rb') as file:
-        pdf_reader = PdfFileReader(file)
-        for page_num in range(pdf_reader.numPages):
-            images = convert_from_path(pdf_path, first_page=page_num + 1, last_page=page_num + 1)
-            for i, image in enumerate(images):
-                image.save(os.path.join(output_folder, f"page_{page_num + 1}_image_{i + 1}.png"), "PNG")
+    pdf_document = fitz.open(pdf_path)
+    
+    for page_num in range(pdf_document.page_count):
+        page = pdf_document[page_num]
+        image_list = page.get_images(full=True)
+        
+        for img_index, img_info in enumerate(image_list):
+            img_index += 1
+            img = page.get_pixmap(img_info[0])
+            img.save(os.path.join(output_folder, f"page_{page_num + 1}_image_{img_index}.png"))
+
+    pdf_document.close()
 
 if __name__ == "__main__":
     pdf_directory = r"C:\Users\dzemo\Desktop\Python\konwerter pit"
     output_folder = r"C:\Users\dzemo\Desktop\Python\cropped_images"
 
-    # Krok 1: Znajdź plik PDF
     pdf_path = find_pdf_file(pdf_directory)
 
     if pdf_path:
-        # Krok 2: Wytnij i zapisz obrazy z pliku PDF
         if not os.path.exists(output_folder):
             os.makedirs(output_folder)
         extract_images_from_pdf(pdf_path, output_folder)

@@ -32,5 +32,21 @@ for nobr_block in nobr_blocks:
 # Utwórz obiekt DataFrame
 result_df = pd.DataFrame(teksty)
 
-# Zapisz do pliku Excel
-result_df.to_excel('nazwa_pliku_excel.xlsx', index=False, header=False)
+# Zapisz do pliku Excel (pierwszy arkusz)
+result_df.to_excel('nazwa_pliku_excel.xlsx', index=False, header=False, sheet_name='Początkowe_Dane')
+
+# Dodaj drugi arkusz z wymaganymi kolumnami
+nazwy_kolumn = [
+    'Numer osobowy', 'NR_LISTY', 'Kwota', 'KOD_SKLADNIKA', 'St.dz.', 'OPIS_SKLADNIKA', 
+    'Zasiłek za czas Od', 'Zasiłek za czas Do', '%', 'ILOŚĆ', 'ANAL_T0', 'ANAL_T1', 
+    'ANAL_T2', 'Data wypłaty', 'ANAL_T4', 'ANAL_T5', 'ANAL_T6', 'ANAL_T7', 
+    'Zasiłek za czas - Dni', 'OKRES:', 'Kod.abs.', 'Kod lit.', 'Składnik wynagrodzenia', 
+    'KodZUS', 'FP/ZUS'
+]
+
+wynik_df = pd.DataFrame(columns=nazwy_kolumn)
+
+# Zapisz do pliku Excel (drugi arkusz)
+with pd.ExcelWriter('nazwa_pliku_excel.xlsx', engine='xlsxwriter') as writer:
+    result_df.to_excel(writer, index=False, header=False, sheet_name='Początkowe_Dane')
+    wynik_df.to_excel(writer, index=False, sheet_name='Wynik', startcol=len(result_df.columns) + 2)

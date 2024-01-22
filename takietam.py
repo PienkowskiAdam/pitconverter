@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from bs4 import BeautifulSoup
 
 # Wczytaj zawartość pliku HTML
@@ -19,11 +20,11 @@ for nobr_block in nobr_blocks:
     # Pobierz tekst z bloku <nobr>
     text_content = nobr_block.get_text(strip=True)
 
-    # Podziel tekst na części, używając &nbsp; jako separatora
-    teksty_blocka = [tekst.strip() for tekst in text_content.split('&nbsp;')]
+    # Użyj wyrażenia regularnego do podziału tekstu, obsługując więcej niż jedną spację jako separator
+    teksty_blocka = re.split(r'\s{2,}', text_content)
 
     # Usuń puste elementy
-    teksty_blocka = [tekst for tekst in teksty_blocka if tekst]
+    teksty_blocka = [tekst.strip() for tekst in teksty_blocka if tekst]
 
     # Dodaj teksty do ogólnej listy
     teksty.append(teksty_blocka)
